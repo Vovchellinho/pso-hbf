@@ -163,9 +163,9 @@ def main():
 			# Замена и корректировка по необходимости
 			if t == T:
 				t = 1
-				m = random.choice(population)
-				print(m)
-				exit(0)
+				# m = random.choice(population)
+				# print(m)
+				# exit(0)
 				# m['position'] = np.copy(global_best_position)
 				# mask = np.random.choice([0, 1], size=dim, p=[0.5, 0.5])
 				# ne
