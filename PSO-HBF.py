@@ -230,17 +230,17 @@ def main(mode = 'sphere', dimen = 2, pop_size = 4):
 
 if __name__ == "__main__":
 	general_value = []
-	num_iter = 10
+	num_iter = 100
 
-	# mode = 'sphere'
-	mode = 'rastrigin'
+	mode = 'sphere'
+	# mode = 'rastrigin'
 	# mode = 'schwefel'
 
 	# n = 2
 	# n = 4
 	# n = 8
-	n = 16
-	# n = 32
+	# n = 16
+	n = 32
 
 	N = 50
 
@@ -261,7 +261,7 @@ if __name__ == "__main__":
 	plt.title(r'Зависимость значения f от количества итераций')
 	plt.xlabel('Число итераций')
 	plt.ylabel(r'Вычисленное значение f')
-	plt.text(num_of_iterations - 1, mean_values[-1], f'{mean_values[-1]:.7f}', fontsize=10, ha='left', va='bottom')
+	plt.text(num_of_iterations - 1, mean_values[-1], f'{mean_values[-1]}', fontsize=10, ha='left', va='bottom')
 	plt.grid(True)
 	plt.show()
 
