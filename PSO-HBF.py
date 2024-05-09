@@ -1,13 +1,30 @@
 import numpy as np
 import random
+import matplotlib.pyplot as plt
+import pandas as pd
+
+def calculate_average(arrays):
+    df = pd.DataFrame(arrays)
+    
+    df = df.transpose()
+    
+    mean_values = df.mean(axis=1, skipna=True)
+    
+    return mean_values.tolist()
 
 
 def initialize_population(size, dim, X_min, X_max):
 	return np.random.uniform(X_min, X_max, (size, dim))
 
 
-def fitness_function(x):
-	return np.sum(x ** 2)
+def fitness_function(x, mode):
+	if mode == 'sphere':
+		return np.sum(x ** 2)
+	elif mode == 'rastrigin':
+		return 10 * len(x) + np.sum(x**2 - 10*np.cos(2 * np.pi * x))
+	elif mode == 'schwefel':
+		return np.max(np.abs(x))
+	
 
 
 def compute_velocity(particle, best_personal, best_global):
@@ -29,13 +46,20 @@ def generate_theta(D):
 	return theta
 
 
-def main():
-	V_min, V_max = -10, 10  # Диапазон значений скорости
-	dim = 10  # Размерность задачи оптимизации
+def main(mode = 'sphere', dimen = 2, pop_size = 4):
+	global_value = []
+	time_pos = []
 	X_min, X_max = -100, 100  # Диапазон значений переменных
-	population_size = 4  # Размер популяции
-	maxit = 10000  # Максимальное количество итераций
-	n = 2 # Количество изменяемых частиц за итерацию
+	if mode == 'rastrigin':
+		X_min, X_max = -5, 5  # Диапазон значений переменных
+
+	V_min, V_max = 0.1*X_min, 0.1*X_max  # Диапазон значений скорости
+
+	dim = dimen  # Размерность задачи оптимизации
+
+	population_size = pop_size  # Размер популяции
+	maxit = 1e6  # Максимальное количество итераций
+	n = round(population_size / 3) # Количество изменяемых частиц за итерацию
 	it = 0  # Текущая итерация
 	T = 100  # Момент времени запуска сценария смены позиции случайной частицы
 	t = 1  # Начальное значение t
@@ -44,20 +68,27 @@ def main():
 	# Генерация начальной популяции X^{i,0} -- популяция i на итерации it
 	population_init = initialize_population(population_size, dim, X_min, X_max)
 	population = []
+
+	# Остановка, если разница не меняется на протяжении 20 итераций
+	count_stop = 0
+
 	for i in range(population_size):
 		population.append({
 			'position': population_init[i],
 			'velocity': np.zeros(dim),
 			'best_position': population_init[i],
-			'best_fitness': fitness_function(population_init[i]),
+			'best_fitness': fitness_function(population_init[i], mode),
 		})
 
 	global_best = min(population, key=lambda p: p['best_fitness'])
 	global_best_position = global_best['best_position']
 	global_best_fitness = global_best['best_fitness']
 
-	while it <= maxit - n:
+	while it <= maxit - n and count_stop < 1000:
 		particles = random.sample(range(population_size), n)
+
+		# Для критерия остановки
+		old_global = global_best_fitness
 
 		for p in particles:
 			old_particle = population[p]
@@ -96,7 +127,7 @@ def main():
 			new_particle['position'] = np.clip(new_particle['position'], X_min, X_max)
 
 			# Оценка новой позиции
-			new_fitness = fitness_function(new_particle['position'])
+			new_fitness = fitness_function(new_particle['position'], mode)
 
 			# обновление позиции и скорости старой частицы
 			population[p]['velocity'] = new_particle['velocity'].copy()
@@ -149,7 +180,7 @@ def main():
 			checked_positions = np.clip(positions, X_min, X_max)
 
 			# Оценка новой позиции
-			new_fitness = fitness_function(checked_positions)
+			new_fitness = fitness_function(checked_positions, mode)
 
 			population[p]['position'] = checked_positions.copy()
 
@@ -180,13 +211,59 @@ def main():
 					else:
 						new_position.append(random_position[i])
 				new_position = np.array(new_position).copy()
-				new_fitness = fitness_function(new_position)
-				if (new_fitness < fitness_function(m['position'])):
+				new_fitness = fitness_function(new_position, mode)
+				if (new_fitness < fitness_function(m['position'], mode)):
 					m['position'] = new_position.copy()
 					m['best_position'] = np.array(new_position).copy()
 					m['best_fitness'] = new_fitness
 
-			print(f"Итерация {it}: Лучшее значение = {global_best_fitness}")
+			# print(f"Итерация {it}: Лучшее значение = {global_best_fitness}")
+			time_pos.append(it)
+			global_value.append(global_best_fitness)
+
+			if np.abs(old_global - global_best_fitness) < 1e-6:
+				count_stop += 1
+			else:
+				count_stop = 0
+
+	return global_value, time_pos
 
 if __name__ == "__main__":
-    main()
+	general_value = []
+	num_iter = 10
+
+	# mode = 'sphere'
+	mode = 'rastrigin'
+	# mode = 'schwefel'
+
+	# n = 2
+	# n = 4
+	# n = 8
+	n = 16
+	# n = 32
+
+	N = 50
+
+	num_of_iterations = 0
+	for i in range(num_iter + 1):
+		values, iterations = main(mode, n, N)
+		general_value.append(values)
+		if len(iterations) > num_of_iterations:
+			num_of_iterations = len(iterations)
+		left = 10 * i // 100
+		right = 10 - left
+		print('\r[', '#' * left, ' ' * right, ']', f' {i:.0f}%', sep='', end='', flush=True)
+
+	mean_values = calculate_average(general_value)
+
+	plt.figure(figsize=(10, 5))
+	plt.plot([i for i in range(num_of_iterations)], mean_values, marker='o', linestyle='-', color='b')
+	plt.title(r'Зависимость значения f от количества итераций')
+	plt.xlabel('Число итераций')
+	plt.ylabel(r'Вычисленное значение f')
+	plt.text(num_of_iterations - 1, mean_values[-1], f'{mean_values[-1]:.7f}', fontsize=10, ha='left', va='bottom')
+	plt.grid(True)
+	plt.show()
+
+	# main('rastrigin')
+	# main('schwefel')
