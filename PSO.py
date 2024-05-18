@@ -6,7 +6,7 @@ import numpy as np
 def rastrigin(x):
 	n = len(x)
 	xx = np.array(x)
-	# return 10*n + sum([xi**2 - 10*np.cos(2*np.pi*xi) for xi in x])
+	# return 10*n + np.sum([xi**2 - 10*np.cos(2*np.pi*xi) for xi in x])
 	return np.sum(i ** 2 for i in xx)
 
 # Define the PSO algorithm
@@ -46,7 +46,7 @@ def pso(cost_func, dim=10, num_particles=4, max_iter=10000, w=0.7298, c1=1.4961,
 	return swarm_best_position, swarm_best_fitness
 
 # Define the dimensions of the problem
-dim = 10
+dim = 4
 
 # Run the PSO algorithm on the Rastrigin function
 solution, fitness = pso(rastrigin, dim=dim)

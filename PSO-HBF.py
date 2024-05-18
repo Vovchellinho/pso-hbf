@@ -58,7 +58,7 @@ def main(mode = 'sphere', dimen = 2, pop_size = 4):
 	dim = dimen  # Размерность задачи оптимизации
 
 	population_size = pop_size  # Размер популяции
-	maxit = 1e6  # Максимальное количество итераций
+	maxit = 3e6  # Максимальное количество итераций
 	n = round(population_size / 3) # Количество изменяемых частиц за итерацию
 	it = 0  # Текущая итерация
 	T = 100  # Момент времени запуска сценария смены позиции случайной частицы
@@ -84,7 +84,7 @@ def main(mode = 'sphere', dimen = 2, pop_size = 4):
 	global_best_position = global_best['best_position']
 	global_best_fitness = global_best['best_fitness']
 
-	while it <= maxit - n and count_stop < 1000:
+	while it <= maxit - n and count_stop < 200:
 		particles = random.sample(range(population_size), n)
 
 		# Для критерия остановки
@@ -221,38 +221,61 @@ def main(mode = 'sphere', dimen = 2, pop_size = 4):
 			time_pos.append(it)
 			global_value.append(global_best_fitness)
 
-			if np.abs(old_global - global_best_fitness) < 1e-6:
-				count_stop += 1
-			else:
-				count_stop = 0
+		if np.abs(old_global - global_best_fitness) < 1e-6:
+			count_stop += 1
+		else:
+			count_stop = 0
 
-	return global_value, time_pos
+	return global_value, time_pos, global_best_position
 
 if __name__ == "__main__":
 	general_value = []
 	num_iter = 100
 
-	mode = 'sphere'
-	# mode = 'rastrigin'
+	# mode = 'sphere'
+	mode = 'rastrigin'
 	# mode = 'schwefel'
 
-	# n = 2
+	X_min, X_max = -100, 100
+	if mode == 'rastrigin':
+		X_min, X_max = -5, 5
+
+	n = 2
 	# n = 4
 	# n = 8
 	# n = 16
-	n = 32
+	# n = 32
 
 	N = 50
 
 	num_of_iterations = 0
-	for i in range(num_iter + 1):
-		values, iterations = main(mode, n, N)
+	iter_nums = []
+	deltas = []
+
+	a = np.abs(X_max - X_min)
+	epsilon = 0.01 * a * np.sqrt(n)
+	countIsOk = 0
+
+	for i in range(num_iter):
+		values, iterations, best_position = main(mode, n, N)
 		general_value.append(values)
+		iter_nums.append(len(iterations))
 		if len(iterations) > num_of_iterations:
 			num_of_iterations = len(iterations)
-		left = 10 * i // 100
+		deltas.append(np.abs(0 - values[-1]))
+		flag_P = True
+		for j in range(len(best_position)):
+			if np.abs(best_position[j] - 0) >= epsilon:
+				flag_P = False
+				break
+
+		if flag_P == True:
+			countIsOk += 1
+
+		
+		left = 10 * (i + 1) // 100
 		right = 10 - left
-		print('\r[', '#' * left, ' ' * right, ']', f' {i:.0f}%', sep='', end='', flush=True)
+		print('\r[', '#' * left, ' ' * right, ']', f' {i+1 :.0f}%', sep='', end='', flush=True)
 
 	mean_values = calculate_average(general_value)
 
@@ -265,5 +288,8 @@ if __name__ == "__main__":
 	plt.grid(True)
 	plt.show()
 
-	# main('rastrigin')
-	# main('schwefel')
+	print()
+	print("Среднее число итераций: ", np.mean(iter_nums))
+	print("Среднее для всех стартов отклонения значения целевой функции: ", np.mean(deltas)) 
+	print("Вероятность локализации: ", countIsOk / 100)
+
